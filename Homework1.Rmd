@@ -1,0 +1,279 @@
+---
+title: '405'
+author: "Xintong Cai"
+date: "2025-04-13"
+output:
+  pdf_document: default
+  html_document: default
+---
+## 1.Assessing estimates of the 95th percentile of 100 iid normal(0,1) random variables.
+
+### (a)
+```{r}
+simple_95th <- function(x) {
+  if (length(x) != 100) {
+    stop("Input vector must be of length 100.")
+  }
+  
+  # Sort the vector
+  sorted_x <- sort(x)
+  
+  # Return the 95th value
+  return(sorted_x[95])
+}
+```
+
+
+### (b)
+
+```{r}
+simple_96th <- function(x) {
+  if (length(x) != 100) {
+    stop("Input vector must be of length 100.")
+  }
+  
+  # Sort the vector
+  sorted_x <- sort(x)
+  
+  # Return the 95th value
+  return(sorted_x[96])
+}
+```
+
+### (c)
+
+```{r}
+simple_avg_9596 <- function(x) {
+  if (length(x) != 100) {
+    stop("Input vector must be of length 100.")
+  }
+  
+  # Sort the vector
+  sorted_x <- sort(x)
+  
+  # Return the 95th value
+  return(mean(sorted_x[95:96]))
+}
+```
+
+### (d)For	each	of	your	functions	in	parts	a-c,	as well	as	the	function quantile(x,0.95),	do	the	following:
+For (a) function 
+(i)
+```{r}
+x <- rnorm(100, mean = 0, sd = 1)
+
+quantile(x, 0.95)
+```
+
+
+```{r}
+simple_95th(x)
+```
+(ii) Repeat the steps for 100,000 times
+```{r}
+n_sim <- 100000
+simple_95th_vals <- numeric(n_sim)
+quantile_95th_vals <- numeric(n_sim)
+sample_mean <- numeric(n_sim)
+
+# Simulation loop
+for (i in 1:n_sim) {
+  x <- rnorm(100)
+  simple_95th_vals[i] <- simple_95th(x) # the real 95th generation
+  quantile_95th_vals[i] <- quantile(x, 0.95)  # default method
+  sample_mean[i] <- mean(quantile_95th_vals[1:i])
+}
+
+# Summarize the results
+cat("Mean of simple 95th estimate:", mean(simple_95th_vals), "\n")
+```
+
+(iii)Plot the sample mean of the fist m of my estimates, which is the quantile_95th_vals, and I smooth the plot by taking 100 as the interval to smooth it. The blue line is the interpolation while the red is the true line. 
+
+```{r}
+smoothed_index <- seq(100, 100000, by = 100)
+smoothed_mean <- sample_mean[smoothed_index]
+options(scipen = 10) # To stop the scientific method of counting
+plot(smoothed_index, smoothed_mean, type = "l", col = "blue",
+     xlab = "Number of Simulations (i)",
+     ylab = "Running Mean of 95th Percentile Estimate",
+     main = "Relatively smoothed Convergence Plot with 100 steps as the interval",
+     ylim = c(1.5, 1.8))
+abline(h = qnorm(0.95), col = "red", lty = 2)
+```
+
+For (b)
+
+```{r}
+n_sim <- 100000
+simple_96th_vals <- numeric(n_sim)
+quantile_96th_vals <- numeric(n_sim)
+sample_mean <- numeric(n_sim)
+
+# Simulation loop
+for (i in 1:n_sim) {
+  x <- rnorm(100)
+  simple_96th_vals[i] <- simple_96th(x) # the  95th generation
+  sample_mean[i] <- mean(simple_96th_vals[1:i])
+}
+
+# Summarize the results
+cat("Mean of simple 96th estimate:", mean(simple_96th_vals), "\n")
+```
+
+```{r}
+smoothed_index <- seq(100, 100000, by = 100)
+smoothed_mean <- sample_mean[smoothed_index]
+options(scipen = 10) # To stop the scientific method of counting
+plot(smoothed_index, smoothed_mean, type = "l", col = "blue",
+     xlab = "Number of Simulations (i)",
+     ylab = "Running Mean of 95th Percentile Estimate",
+     main = "Relatively smoothed Convergence Plot with 100 steps as the interval",
+     ylim = c(1.5, 1.8))
+abline(h = qnorm(0.95), col = "red", lty = 2)
+```
+
+
+```{r}
+n_sim <- 100000
+simple_9596th_vals <- numeric(n_sim)
+quantile_9596th_vals <- numeric(n_sim)
+sample_mean <- numeric(n_sim)
+
+# Simulation loop
+for (i in 1:n_sim) {
+  x <- rnorm(100)
+  simple_9596th_vals[i] <- simple_avg_9596(x) 
+  sample_mean[i] <- mean(simple_9596th_vals[1:i])
+}
+
+# Summarize the results
+cat("Mean of simple 95, 96th estimate:", mean(simple_9596th_vals), "\n")
+```
+```{r}
+smoothed_index <- seq(100, 100000, by = 100)
+smoothed_mean <- sample_mean[smoothed_index]
+options(scipen = 10) # To stop the scientific method of counting
+plot(smoothed_index, smoothed_mean, type = "l", col = "blue",
+     xlab = "Number of Simulations (i)",
+     ylab = "Running Mean of 95th Percentile Estimate",
+     main = "Relatively smoothed Convergence Plot with 100 steps as the interval",
+     ylim = c(1.5, 1.8))
+abline(h = qnorm(0.95), col = "red", lty = 2)
+```
+
+For quantile()
+
+```{r}
+n_sim <- 100000
+quantile_95th_vals <- numeric(n_sim)
+sample_mean <- numeric(n_sim)
+
+# Summarize the results
+
+for (i in 1:n_sim) {
+  x <- rnorm(100)
+  quantile_95th_vals[i] <- quantile(x,0.95) 
+  sample_mean[i] <- mean(quantile_95th_vals[1:i])
+}
+
+# Summarize the results
+cat("Mean of quantile() estimate:", mean(quantile_95th_vals), "\n")
+```
+
+
+```{r}
+smoothed_index <- seq(100, 100000, by = 100)
+smoothed_mean <- sample_mean[smoothed_index]
+options(scipen = 10) # To stop the scientific method of counting
+plot(smoothed_index, smoothed_mean, type = "l", col = "blue",
+     xlab = "Number of Simulations (i)",
+     ylab = "Running Mean of 95th Percentile Estimate",
+     main = "Relatively smoothed Convergence Plot with 100 steps as the interval",
+     ylim = c(1.5, 1.8))
+abline(h = qnorm(0.95), col = "red", lty = 2)
+```
+
+
+
+### (e)
+
+The 95th estimate: 1.597052 
+The 96th estimate: 1.692229 
+The 95+96 /2 quantile() estimate: 1.639586 
+The quantile() estimate : 1.596467 
+
+```{r}
+qnorm(0.95)
+```
+
+It seems like the 95+96/2 quantile estimate is the best method to estimate the 95th quantile. It better captures the interpolation that the true quantile lies between the 95th and 96th values, so it is a better estimator compared with the other three.  
+
+
+
+## 2. Simulation of pi  
+
+```{r}
+pi2 <- function(n) {
+  sum_val <- sum(1 / (1:n)^2)
+  return(sqrt(6 * sum_val))
+}
+```
+
+
+```{r}
+for (j in 0:6) {
+  n <- 10^j
+  approximation <- pi2(n)
+  cat("j =", j, ", n =", n, ", pi2(n) =", approximation, "\n")
+}
+```
+
+
+```{r}
+pi3 <- function(n) {
+  x <- runif(n, -1, 1)
+  y <- runif(n, -1, 1)
+  inside <- (x^2 + y^2 <= 1)
+  estimate <- 4 * mean(inside)
+  return(estimate)
+}
+```
+
+
+```{r}
+set.seed(123)  # For reproducibility
+for (j in 0:6) {
+  n <- 10^j
+  est <- pi3(n)
+  cat("j =", j, ", n =", n, ", pi3(n) =", est, "\n")
+}
+```
+
+The triangle means the points outside the circle and the circle represents the points that are inside the circle.
+
+```{r}
+n <- 10^4
+x <- runif(n, -1, 1)
+y <- runif(n, -1, 1)
+inside <- (x^2 + y^2 <= 1)
+
+plot(x[!inside], y[!inside], col = "blue", pch = 2, cex = 0.5,
+     xlab = "x", ylab = "y", main = "Monte Carlo Points (j = 6)")
+points(x[inside], y[inside], col = "violet", pch = 1, cex = 0.5)
+legend("topright", legend = c("Outside circle", "Inside circle"),col = c("blue", "violet"), pch = c(3, 1), bty = "n")
+```
+
+```{r}
+n <- 10^5
+x <- runif(n, -1, 1)
+y <- runif(n, -1, 1)
+inside <- (x^2 + y^2 <= 1)
+
+plot(x[!inside], y[!inside], col = "blue", pch = 2, cex = 0.5,
+     xlab = "x", ylab = "y", main = "Monte Carlo Points (j = 6)")
+points(x[inside], y[inside], col = "violet", pch = 1, cex = 0.5)
+legend("topright", legend = c("Outside circle", "Inside circle"),col = c("blue", "violet"), pch = c(3, 1), bty = "n")
+```
+
+

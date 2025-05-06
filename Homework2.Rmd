@@ -1,0 +1,190 @@
+---
+title: "404 homework2"
+author: "Xintong Cai"
+date: "2025-05-02"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1 R simulation
+
+### 1 a) Read out the data
+```{r}
+data <- read.table('SearchResults.txt',header = FALSE, sep = '')
+```
+
+### 1 b)
+
+```{r}
+magnitudes <- as.numeric(data$V5) 
+kde <- density(magnitudes, kernel = "gaussian")
+plot(kde, main = "Figure 1:Kernel Density Estimate of Earthquake Magnitudes", xlab = "Magnitude")
+```
+
+### 1c)
+
+```{r}
+simulate_from_kde <- function(density_obj, n) {
+  x_vals <- density_obj$x
+  y_vals <- density_obj$y
+  cdf_vals <- cumsum(y_vals)
+  cdf_vals <- cdf_vals / max(cdf_vals) 
+
+  u <- runif(n)  
+  simulated_values <- approx(cdf_vals, x_vals, xout = u)$y
+  return(simulated_values)
+}
+
+
+set.seed(32)  # for reproducibility
+kde_list <- list()
+
+for (i in 1:100) {
+  simulated <- simulate_from_kde(kde, 116)
+  smoothed <- density(simulated[1:115], kernel = "gaussian", bw = kde$bw)
+  kde_list[[i]] <- smoothed
+}
+```
+
+### 1d
+
+```{r}
+y_matrix <- matrix(NA, nrow = 200, ncol = length(kde$x))
+
+for (i in 1:200) {
+  sim_vals <- simulate_from_kde(kde, 116)
+  smoothed <- density(sim_vals[1:115], kernel = "gaussian", bw = kde$bw)
+
+  y_interp <- approx(smoothed$x, smoothed$y, xout = kde$x, rule = 2)$y
+  y_matrix[i, ] <- y_interp
+}
+```
+
+```{r}
+sorted_y <- apply(y_matrix, 2, sort)
+
+the_5 <- sorted_y[5, ]     # (approx 2.5th percentile)
+the_195 <- sorted_y[195, ]
+
+```
+
+### 1e)
+
+```{r}
+library(maps)
+library(MASS)
+longitudes <- as.numeric(data$V8[1:116])
+latitudes  <- as.numeric(data$V7[1:116])
+
+
+kde2d_result <- kde2d(longitudes, latitudes, n = 100)
+```
+
+
+
+```{r}
+map("county", "california", col = "gray90", fill = TRUE, bg = "white", lwd = 0.5)
+
+xlim_range <- range(longitudes) + c(-0.5, 0.5)
+ylim_range <- range(latitudes) + c(-0.5, 0.5)
+
+image(kde2d_result, col = heat.colors(100), add = TRUE,main = 'Figure2')
+title("Figure2: Earthquake Density and Kernel Estimate")
+
+points(longitudes, latitudes, pch = 20, col = "red")
+
+#Adding the sample here
+legend("topright", legend = c("Earthquake Locations", "Kernel Density"), 
+       col = c("red", "blue"), pch = c(20, NA), lty = c(NA, 1), 
+       fill = c(NA, "blue"), border = NA, bty = "n")
+```
+
+
+
+## 2 Identification of influential points in multivariate regression.
+
+### 2a
+
+```{r}
+housing_data <- read.table('LAHousing.txt', header =TRUE,sep = '')
+housing_data[, ncol(housing_data)] <- gsub("\\\\+", "", housing_data[, ncol(housing_data)])
+housing_data <- housing_data[-nrow(housing_data), ]
+```
+
+
+```{r}
+housing <- housing_data[, c("SalesofSingleFamilyHomes", 
+                    "PriceMedianSFR.1000.", 
+                    "PriceMedianCondos.1000.", 
+                    "MedianHomePrice.Sq.Ft.")]
+housing[housing == "n/a" | housing == "N/A"] <- NA
+housing_clean <- na.omit(housing)
+Y  <- housing_clean$SalesofSingleFamilyHomes
+X1 <- housing_clean$PriceMedianSFR.1000.
+X2 <- housing_clean$PriceMedianCondos.1000.
+X3 <- housing_clean$MedianHomePrice.Sq.Ft.
+length(Y)
+```
+
+### 2b
+
+```{r}
+LA_housing <- data.frame(Y = Y, X1 = X1, X2 = X2, X3 = X3)
+LA_housing$X1 <- as.numeric(as.character(LA_housing$X1))
+LA_housing$X2 <- as.numeric(as.character(LA_housing$X2))
+LA_housing$X3 <- as.numeric(as.character(LA_housing$X3))
+model <- lm(Y ~ X1 + X2 + X3, data = LA_housing)
+beta_init <- coef(model)['X1']
+beta_init
+```
+
+### 2c
+
+```{r}
+
+model_minus_i <- lm(Y ~ X1 + X2 + X3, data = LA_housing[-1,])
+beta1_minus_i <- coef(model_minus_i)["X1"]
+beta1_minus_i
+```
+
+```{r}
+diff <- beta1_minus_i - coef(model)['X1']
+diff
+```
+
+### 2d
+
+```{r}
+model_full <- lm(Y ~ X1 + X2 + X3, data = LA_housing)
+beta1_full <- coef(model_full)["X1"]
+
+n <- nrow(LA_housing)
+diffs <- numeric(n)
+
+#leave-one-out
+for (i in 2:n) {
+  LA_housing_omit <- LA_housing[-i, ]
+  model_omit <- lm(Y ~ X1 + X2 + X3, data = LA_housing_omit)
+  beta1_omit <- coef(model_omit)["X1"]
+  diffs[i] <- beta1_omit - beta1_full
+}
+```
+
+### 2e
+
+```{r}
+
+plot(1:n, diffs, type = "h", col = "blue", lwd = 2,
+     xlab = "Observation i", 
+     ylab = expression(beta[1]^{(-i)} - beta[1]),
+     main = expression("Figure 3: Influence of Each Observation on " * beta[1]))
+abline(h = 0, col = "red", lty = 2)
+
+```
+
+
